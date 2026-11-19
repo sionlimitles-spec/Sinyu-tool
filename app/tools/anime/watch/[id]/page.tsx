@@ -3,16 +3,14 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ChevronLeft, ChevronRight, Download, Server, Info, Play, Zap, ExternalLink } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Download, Server, Info, Play, MonitorPlay, Zap } from "lucide-react";
 
 export default function AnimeWatchPage() {
   const { id } = useParams();
   const router = useRouter();
   const [episode, setEpisode] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
   const [videoUrl, setVideoUrl] = useState("");
-  const [isDirectVideo, setIsDirectVideo] = useState(false); // True jika pakai <video>, false jika <iframe>
   const [activeServer, setActiveServer] = useState("default");
   const [loadingVideo, setLoadingVideo] = useState(false);
 
@@ -24,7 +22,6 @@ export default function AnimeWatchPage() {
         if (json.success) {
           setEpisode(json.data);
           setVideoUrl(json.data.defaultStreamingUrl);
-          setIsDirectVideo(false);
         }
       } catch (err) {
         console.error(err);
@@ -35,40 +32,17 @@ export default function AnimeWatchPage() {
     fetchEpisode();
   }, [id]);
 
-  // Fungsi memutar video Direct MP4 (HD)
-  const playDirectVideo = async (rawUrl: string, serverName: string) => {
-    setLoadingVideo(true);
-    setActiveServer(serverName);
-    try {
-      const res = await fetch(`/api/anime/extract?url=${encodeURIComponent(rawUrl)}`);
-      const json = await res.json();
-      
-      if (json.success && json.url) {
-        setVideoUrl(json.url);
-        setIsDirectVideo(true); // Aktifkan player <video>
-      } else {
-        alert("Gagal mengekstrak link video ini. Coba server lain.");
-        setActiveServer(isDirectVideo ? "" : "default");
-      }
-    } catch (err) {
-      alert("Koneksi gagal.");
-    } finally {
-      setLoadingVideo(false);
-    }
-  };
-
-  // Fungsi memutar video Iframe (Biasanya 360p)
-  const changeIframeServer = async (serverId: string, serverName: string) => {
+  const changeServer = async (serverId: string, serverName: string) => {
     if (activeServer === serverId) return;
     setLoadingVideo(true);
     setActiveServer(serverId);
+
     try {
       const res = await fetch(`/api/anime/server?id=${serverId}`);
       const json = await res.json();
       
       if (json.success && json.url) {
         setVideoUrl(json.url);
-        setIsDirectVideo(false); // Aktifkan player <iframe>
       } else {
         alert("Gagal memuat server ini.");
         setActiveServer("default");
@@ -84,22 +58,23 @@ export default function AnimeWatchPage() {
   if (loading) return (
     <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-cyan-500 gap-3">
       <div className="w-8 h-8 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+      <p className="text-[10px] font-bold tracking-widest uppercase">Menyiapkan Player...</p>
     </div>
   );
   
   if (!episode) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-red-500 font-bold">Episode tidak ditemukan.</div>;
 
-  // Filter link download MP4 untuk dijadikan tombol Streaming HD
-  const hdStreams = episode.downloadUrl?.formats
-    ?.find((f: any) => f.title === "MP4") // Hanya ambil MP4 (browser gak support MKV)
-    ?.qualities?.map((q: any) => {
-      // Cari link Pixeldrain
-      const pixeldrain = q.urls.find((u: any) => u.title.toLowerCase().includes("pixeldrain"));
-      if (pixeldrain) {
-        return { quality: q.title, url: pixeldrain.url };
-      }
-      return null;
-    }).filter(Boolean) || [];
+  // SORTIR KUALITAS: 1080p/720p di atas, lalu 480p, lalu 360p
+  const sortedQualities = episode.server?.qualities ? [...episode.server.qualities].sort((a: any, b: any) => {
+    const getScore = (title: string) => {
+      if (title.includes('1080') || title.includes('4k')) return 4;
+      if (title.includes('720')) return 3;
+      if (title.includes('480')) return 2;
+      if (title.includes('360')) return 1;
+      return 0;
+    };
+    return getScore(b.title) - getScore(a.title);
+  }) : [];
 
   return (
     <main className="min-h-screen bg-[#050505] text-white font-sans pb-24">
@@ -111,7 +86,7 @@ export default function AnimeWatchPage() {
       </header>
 
       {/* VIDEO PLAYER AREA */}
-      <div className="w-full aspect-video bg-black relative border-b border-white/5 overflow-hidden">
+      <div className="w-full aspect-video bg-black relative border-b border-white/5">
         {loadingVideo && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="w-6 h-6 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
@@ -119,25 +94,13 @@ export default function AnimeWatchPage() {
         )}
         
         {videoUrl ? (
-          isDirectVideo ? (
-            // NATIVE HTML5 PLAYER (Untuk kualitas HD)
-            <video
-              src={videoUrl}
-              controls
-              autoPlay
-              className="absolute inset-0 w-full h-full object-contain z-10 bg-black"
-              controlsList="nodownload"
-            />
-          ) : (
-            // IFRAME PLAYER (Untuk server default/360p)
-            <iframe
-              src={videoUrl}
-              allowFullScreen
-              className="absolute inset-0 w-full h-full relative z-10"
-              title="Video Player"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            ></iframe>
-          )
+          <iframe
+            src={videoUrl}
+            allowFullScreen
+            className="absolute inset-0 w-full h-full relative z-10"
+            title="Video Player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          ></iframe>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs">
             Link video tidak tersedia.
@@ -160,75 +123,60 @@ export default function AnimeWatchPage() {
           ) : <div className="flex-1"></div>}
         </div>
 
-        {/* STREAMING HD (DARI LINK DOWNLOAD) */}
-        {hdStreams.length > 0 && (
-          <div className="bg-gradient-to-br from-cyan-900/40 to-black border border-cyan-500/30 rounded-2xl p-4">
-            <h3 className="text-xs font-bold text-cyan-400 mb-3 flex items-center gap-2 uppercase tracking-wider">
-              <Zap size={14} className="fill-cyan-400" /> Streaming Kualitas HD (Direct)
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {hdStreams.map((stream: any, i: number) => (
-                <button
-                  key={i}
-                  onClick={() => playDirectVideo(stream.url, `hd-${i}`)}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-black border transition-all flex items-center gap-2 ${
-                    activeServer === `hd-${i}`
-                      ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(8,145,178,0.5)]" 
-                      : "bg-black/50 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
-                  }`}
-                >
-                  <Play size={12} /> Putar {stream.quality}
-                </button>
-              ))}
-            </div>
-            <p className="text-[9px] text-cyan-300/60 mt-3 italic">
-              *Kualitas HD diputar langsung menggunakan player internal (bebas lag).
-            </p>
-          </div>
-        )}
-
-        {/* PEMILIH SERVER IFRAME (360p) */}
-        {episode.server?.qualities && (
+        {/* PEMILIH SERVER (DIURUTKAN DARI HD KE SD) */}
+        {sortedQualities.length > 0 && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-            <h3 className="text-xs font-bold text-slate-300 mb-3 flex items-center gap-2 uppercase tracking-wider">
-              <Server size={14} /> Server Alternatif
-            </h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-2 uppercase tracking-wider">
+                <Zap size={14} className="fill-cyan-400" /> Pilih Kualitas HD
+              </h3>
+            </div>
             
             <div className="space-y-4">
               <div>
                 <button
                   onClick={() => {
                     setVideoUrl(episode.defaultStreamingUrl);
-                    setIsDirectVideo(false);
                     setActiveServer("default");
                   }}
                   className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-2 ${
                     activeServer === "default" 
-                      ? "bg-slate-700 text-white border-slate-500" 
-                      : "bg-black/40 text-slate-400 border-white/10 hover:bg-white/10"
+                      ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(8,145,178,0.4)]" 
+                      : "bg-black/40 text-slate-300 border-white/10 hover:bg-white/10"
                   }`}
                 >
-                  <Play size={12} /> Player Utama (Blogspot)
+                  <Play size={12} /> Player Utama (360p)
                 </button>
               </div>
 
-              {episode.server.qualities.map((q: any, i: number) => {
+              {sortedQualities.map((q: any, i: number) => {
                 if (!q.serverList || q.serverList.length === 0) return null;
+                
+                // HANYA TAMPILKAN SERVER YANG BISA DI-EMBED (Buang VIP, Mega, Gofile)
+                const workingServers = q.serverList.filter((s: any) => {
+                  const name = s.title.toLowerCase();
+                  return !name.includes("vip") && !name.includes("mega") && !name.includes("gofile");
+                });
+
+                if (workingServers.length === 0) return null;
+
                 return (
                   <div key={i}>
-                    <p className="text-[9px] font-mono text-slate-500 mb-1.5 uppercase">{q.title}</p>
+                    <p className="text-[10px] font-mono text-cyan-500 font-bold mb-2 uppercase tracking-wider flex items-center gap-1">
+                      <MonitorPlay size={12} /> Kualitas {q.title}
+                    </p>
                     <div className="flex flex-wrap gap-2">
-                      {q.serverList.map((server: any) => (
+                      {workingServers.map((server: any) => (
                         <button
                           key={server.serverId}
-                          onClick={() => changeIframeServer(server.serverId, server.title)}
+                          onClick={() => changeServer(server.serverId, server.title)}
                           className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
                             activeServer === server.serverId 
-                              ? "bg-slate-700 text-white border-slate-500" 
-                              : "bg-black/40 text-slate-400 border-white/10 hover:bg-white/10"
+                              ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(8,145,178,0.4)]" 
+                              : "bg-black/40 text-slate-300 border-white/10 hover:bg-white/10"
                           }`}
                         >
-                          {server.title}
+                          {server.title.replace("Mega ", "").replace("Premium ", "")}
                         </button>
                       ))}
                     </div>
@@ -236,6 +184,9 @@ export default function AnimeWatchPage() {
                 );
               })}
             </div>
+            <p className="text-[9px] text-slate-500 mt-3 italic">
+              *Server VIP & Mega disembunyikan karena memblokir pemutaran di web.
+            </p>
           </div>
         )}
 
@@ -248,6 +199,43 @@ export default function AnimeWatchPage() {
             <p className="text-xs text-slate-300 leading-relaxed text-justify">
               {episode.synopsis.paragraphs[0]}
             </p>
+          </div>
+        </div>
+
+        {/* Link Download */}
+        <div>
+          <h2 className="text-sm font-black text-white flex items-center gap-2 mb-4 uppercase tracking-widest">
+            <Download size={16} className="text-cyan-400" /> Download Kualitas HD
+          </h2>
+          
+          <div className="space-y-4">
+            {episode.downloadUrl?.formats?.map((format: any, idx: number) => (
+              <div key={idx} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <div className="bg-white/10 px-4 py-2 border-b border-white/10">
+                  <h3 className="text-xs font-black text-white tracking-wider">{format.title}</h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  {format.qualities.map((quality: any, qIdx: number) => (
+                    <div key={qIdx}>
+                      <p className="text-[10px] font-mono text-cyan-500 mb-2 uppercase tracking-wider">{quality.title}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {quality.urls.map((urlObj: any, uIdx: number) => (
+                          <a 
+                            key={uIdx} 
+                            href={urlObj.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 bg-black/40 border border-white/10 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-all"
+                          >
+                            {urlObj.title}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
