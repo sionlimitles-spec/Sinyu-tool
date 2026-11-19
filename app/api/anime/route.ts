@@ -1,63 +1,44 @@
 import { NextResponse } from "next/server";
+// @ts-ignore
+import { getLatest } from "elevenime-api";
 
 export async function GET() {
   try {
-    // Mengambil halaman utama Samehadaku
-    const res = await fetch("https://samehadaku.email/", {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-      next: { revalidate: 3600 } // Cache selama 1 jam agar cepat & tidak dianggap spam
-    });
-
-    const html = await res.text();
-
-    // Ekstraksi data menggunakan Regex (tanpa library tambahan)
-    const animeRegex = /<div class="bsx"><a href="([^"]+)" title="([^"]+)">[\s\S]*?<img src="([^"]+)"[\s\S]*?<span class="epx">([^<]+)<\/span>[\s\S]*?<span class="sb">([^<]+)<\/span>/g;
+    const response: any = await getLatest({ page: 1 });
     
-    const animeList = [];
-    let match;
-    let idCounter = 1;
+    // Memastikan data yang diambil berbentuk array
+    let animeList = Array.isArray(response) ? response : (response.data || response.result || []);
 
-    while ((match = animeRegex.exec(html)) !== null) {
-      const [_, link, title, image, episode, status] = match;
-      
-      // Membersihkan judul dari tag HTML jika ada
-      const cleanTitle = title.replace(/&#8217;/g, "'").replace(/&#8211;/g, "-").replace(/&amp;/g, "&");
-
-      animeList.push({
-        id: idCounter.toString(),
-        title: cleanTitle,
-        image: image,
-        episodes: episode.replace("Episode", "").trim(),
-        status: status,
-        // Rating palsu (karena Samehadaku tidak menyediakan rating, kita buat angka random yang stabil)
-        rating: (Math.random() * (9.5 - 7.0) + 7.0).toFixed(1), 
-        link: link
-      });
-      idCounter++;
+    if (!animeList || animeList.length === 0) {
+      throw new Error("Data anime kosong");
     }
 
-    // Jika regex gagal (misal struktur HTML Samehadaku berubah), gunakan fallback data dummy
-    if (animeList.length === 0) {
-      throw new Error("Gagal parsing HTML");
-    }
+    const formattedData = animeList.slice(0, 12).map((anime: any, index: number) => ({
+      id: anime.linkId || anime.id || index.toString(),
+      title: anime.title,
+      image: anime.image || anime.cover,
+      rating: anime.rating || (Math.random() * (9.5 - 7.0) + 7.0).toFixed(1),
+      episodes: anime.episodes || anime.eps || "1",
+      status: anime.status || "Ongoing",
+      link: anime.link || "#"
+    }));
 
-    return NextResponse.json({ success: true, data: animeList.slice(0, 12) }); // Ambil 12 anime terbaru
+    return NextResponse.json({ success: true, data: formattedData });
   } catch (error) {
-    console.error("Scraping error:", error);
-    // FALLBACK: Jika diblokir, tampilkan data dummy agar UI tetap bisa dilihat
+    console.error("Gagal mengambil data anime:", error);
+    
+    // Fallback jika API error
     return NextResponse.json({ 
       success: true, 
       data: Array.from({ length: 6 }).map((_, i) => ({
         id: i.toString(),
-        title: `Anime Terbaru ${i + 1}`,
-        image: `https://via.placeholder.com/300x400/1a1a1a/ffffff?text=Anime+${i + 1}`,
+        title: `Gagal Memuat Data`,
+        image: `https://placehold.co/300x400/1a1a1a/ffffff?text=No+Image`,
         episodes: `${i + 1}`,
-        status: "Ongoing",
-        rating: "8.5",
+        status: "Unknown",
+        rating: "8.0",
         link: "#"
       }))
     });
   }
-        }
+}
