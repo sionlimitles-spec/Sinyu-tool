@@ -14,23 +14,23 @@ body {
     display: none;
   }
 
-  /* Efek Kaca Monolith (Frosted & Tegas) */
+  /* Efek Kaca Premium */
   .glass-card {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
   }
 
-  /* Teks Gradasi Premium */
-  .text-gradient {
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  .glass-info-bar {
+    background: rgba(10, 10, 10, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* Animasi Masuk (Staggered) */
+  /* Animasi Masuk */
   @keyframes slideUpFade {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -40,12 +40,10 @@ body {
     opacity: 0;
   }
 
-  /* Animasi Border Berputar (Hover Effect) */
-  @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  .animate-spin-slow {
-    animation: spin-slow 4s linear infinite;
+  /* Video Poster */
+  .video-poster {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
   }
 }
