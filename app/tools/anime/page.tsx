@@ -7,36 +7,30 @@ import { ArrowLeft, Search, Star, Flame } from "lucide-react";
 export default function AnimePage() {
   const [animeList, setAnimeList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState("");
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"ongoing" | "completed" | "recent">("ongoing");
 
-  const fetchAnime = async (query = "") => {
+  const fetchAnime = async (query = "", type = activeTab) => {
     setLoading(true);
-    setErrorMsg(""); 
     try {
-      const url = query ? `/api/anime/list?q=${query}` : `/api/anime/list?type=recent`;
+      const url = query ? `/api/anime/list?q=${query}` : `/api/anime/list?type=${type}`;
       const res = await fetch(url);
       const json = await res.json();
-      
-      if (json.success) {
-        setAnimeList(json.data);
-      } else {
-        setErrorMsg(json.message || "Gagal memuat data.");
-      }
+      if (json.success) setAnimeList(json.data);
     } catch (err) {
-      setErrorMsg("Koneksi gagal. Coba lagi.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAnime();
-  }, []);
+    fetchAnime(search, activeTab);
+  }, [activeTab]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchAnime(search);
+    fetchAnime(search, activeTab);
   };
 
   return (
@@ -61,9 +55,17 @@ export default function AnimePage() {
         </form>
       </header>
 
+      {!search && (
+        <div className="px-6 mt-4 flex gap-2 overflow-x-auto hide-scrollbar">
+          <button onClick={() => setActiveTab("ongoing")} className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${activeTab === "ongoing" ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400"}`}>Ongoing</button>
+          <button onClick={() => setActiveTab("completed")} className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${activeTab === "completed" ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400"}`}>Completed</button>
+          <button onClick={() => setActiveTab("recent")} className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${activeTab === "recent" ? "bg-cyan-500 text-black" : "bg-white/5 text-slate-400"}`}>Recent</button>
+        </div>
+      )}
+
       <div className="px-6 mt-6 mb-4 flex justify-between items-end">
         <h2 className="text-sm font-black tracking-widest uppercase flex items-center gap-2">
-          <Flame size={16} className="text-red-500" /> {search ? `Hasil: ${search}` : "New Update Anime"}
+          <Flame size={16} className="text-red-500" /> {search ? `Hasil: ${search}` : activeTab}
         </h2>
       </div>
 
@@ -74,14 +76,6 @@ export default function AnimePage() {
               <div key={i} className="aspect-[3/4] bg-white/5 rounded-xl animate-pulse"></div>
             ))}
           </div>
-        ) : errorMsg ? (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center p-4 rounded-xl">
-            {errorMsg}
-          </div>
-        ) : animeList.length === 0 ? (
-          <div className="text-center text-slate-500 text-xs mt-10">
-            Tidak ada anime yang ditemukan.
-          </div>
         ) : (
           <div className="grid grid-cols-3 gap-3">
             {animeList.map((anime) => (
@@ -90,46 +84,32 @@ export default function AnimePage() {
                 href={`/tools/anime/detail/${anime.animeId}`}
                 className="group relative flex flex-col cursor-pointer"
               >
-                {/* POSTER CONTAINER DENGAN EFEK BLUR */}
                 <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-white/5 bg-[#151515]">
-                  
-                  {/* 1. Background Blur (Isi ruang kosong) */}
-                  <img
-                    src={anime.poster}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-125"
-                  />
-                  
-                  {/* 2. Gambar Utama (Tetap utuh, tidak terpotong) */}
                   <img
                     src={anime.poster}
                     alt={anime.title}
-                    className="relative z-10 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
                   
-                  {/* 3. Overlay Gradient Gelap di bawah */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent z-10"></div>
-
-                  {/* Badge NEW */}
-                  <div className="absolute top-0 left-0 bg-cyan-500 text-black text-[9px] font-black px-2 py-0.5 rounded-br-lg z-20 shadow-lg">
+                  <div className="absolute top-0 left-0 bg-cyan-500 text-black text-[9px] font-black px-2 py-0.5 rounded-br-lg z-10 shadow-lg">
                     NEW
                   </div>
 
-                  {/* Rating */}
                   {anime.score && (
-                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-20 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-white/10">
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10 bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-white/10">
                       <Star size={9} className="text-yellow-400 fill-yellow-400" />
                       <span className="text-[9px] font-bold text-white">{anime.score.replace("★ ", "")}</span>
                     </div>
                   )}
 
-                  {/* Episode Text */}
-                  <div className="absolute bottom-1.5 left-2 right-2 z-20">
-                    <span className="text-[10px] font-black text-white drop-shadow-md">
-                      Eps {anime.episodes || "?"}
-                    </span>
-                  </div>
+                  {anime.episodes && (
+                    <div className="absolute bottom-1.5 left-2 right-2 z-20">
+                      <span className="text-[10px] font-black text-white drop-shadow-md">
+                        Eps {anime.episodes}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <h3 className="text-[10px] font-bold text-slate-200 mt-2 line-clamp-2 leading-tight group-hover:text-cyan-400 transition-colors">
