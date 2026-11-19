@@ -30,7 +30,7 @@ export default function Home() {
   const tools = [
     { name: 'Temp Mail', icon: Mail, category: 'MAIL', href: '#', color: 'text-blue-600', bg: 'bg-blue-100/50' },
     { name: 'QR Gen', icon: QrCode, category: 'MAKER', href: '/tools/qr-generator', color: 'text-violet-600', bg: 'bg-violet-100/50' },
-    { name: 'Anime', icon: PlayCircle, category: 'MEDIA', href: '/tools/anime', color: 'text-pink-600', bg: 'bg-pink-100/50' }, // <-- LINK ANIME
+    { name: 'Anime', icon: PlayCircle, category: 'MEDIA', href: '/tools/anime', color: 'text-pink-600', bg: 'bg-pink-100/50' },
     { name: 'Downloader', icon: Download, category: 'TOOLS', href: '#', color: 'text-emerald-600', bg: 'bg-emerald-100/50' },
     { name: 'Security', icon: ShieldCheck, category: 'SYSTEM', href: '#', color: 'text-amber-600', bg: 'bg-amber-100/50' },
     { name: 'Network', icon: Globe, category: 'SYSTEM', href: '#', color: 'text-sky-600', bg: 'bg-sky-100/50' },
