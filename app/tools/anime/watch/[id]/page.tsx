@@ -3,15 +3,17 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ChevronLeft, ChevronRight, Download, Server, Info, Play } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Download, Server, Info, Play, Zap, ExternalLink } from "lucide-react";
 
 export default function AnimeWatchPage() {
   const { id } = useParams();
   const router = useRouter();
   const [episode, setEpisode] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
   const [videoUrl, setVideoUrl] = useState("");
-  const [activeServer, setActiveServer] = useState("");
+  const [isDirectVideo, setIsDirectVideo] = useState(false); // True jika pakai <video>, false jika <iframe>
+  const [activeServer, setActiveServer] = useState("default");
   const [loadingVideo, setLoadingVideo] = useState(false);
 
   useEffect(() => {
@@ -21,9 +23,8 @@ export default function AnimeWatchPage() {
         const json = await res.json();
         if (json.success) {
           setEpisode(json.data);
-          // Secara default, kita coba tembus server default pakai proxy
-          setVideoUrl(`/api/anime/proxy?url=${encodeURIComponent(json.data.defaultStreamingUrl)}`);
-          setActiveServer("default");
+          setVideoUrl(json.data.defaultStreamingUrl);
+          setIsDirectVideo(false);
         }
       } catch (err) {
         console.error(err);
@@ -34,7 +35,30 @@ export default function AnimeWatchPage() {
     fetchEpisode();
   }, [id]);
 
-  const changeServer = async (serverId: string, serverName: string) => {
+  // Fungsi memutar video Direct MP4 (HD)
+  const playDirectVideo = async (rawUrl: string, serverName: string) => {
+    setLoadingVideo(true);
+    setActiveServer(serverName);
+    try {
+      const res = await fetch(`/api/anime/extract?url=${encodeURIComponent(rawUrl)}`);
+      const json = await res.json();
+      
+      if (json.success && json.url) {
+        setVideoUrl(json.url);
+        setIsDirectVideo(true); // Aktifkan player <video>
+      } else {
+        alert("Gagal mengekstrak link video ini. Coba server lain.");
+        setActiveServer(isDirectVideo ? "" : "default");
+      }
+    } catch (err) {
+      alert("Koneksi gagal.");
+    } finally {
+      setLoadingVideo(false);
+    }
+  };
+
+  // Fungsi memutar video Iframe (Biasanya 360p)
+  const changeIframeServer = async (serverId: string, serverName: string) => {
     if (activeServer === serverId) return;
     setLoadingVideo(true);
     setActiveServer(serverId);
@@ -43,8 +67,8 @@ export default function AnimeWatchPage() {
       const json = await res.json();
       
       if (json.success && json.url) {
-        // PAKSA SEMUA SERVER MASUK KE DALAM PROXY IFRAME
-        setVideoUrl(`/api/anime/proxy?url=${encodeURIComponent(json.url)}`);
+        setVideoUrl(json.url);
+        setIsDirectVideo(false); // Aktifkan player <iframe>
       } else {
         alert("Gagal memuat server ini.");
         setActiveServer("default");
@@ -65,6 +89,18 @@ export default function AnimeWatchPage() {
   
   if (!episode) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-red-500 font-bold">Episode tidak ditemukan.</div>;
 
+  // Filter link download MP4 untuk dijadikan tombol Streaming HD
+  const hdStreams = episode.downloadUrl?.formats
+    ?.find((f: any) => f.title === "MP4") // Hanya ambil MP4 (browser gak support MKV)
+    ?.qualities?.map((q: any) => {
+      // Cari link Pixeldrain
+      const pixeldrain = q.urls.find((u: any) => u.title.toLowerCase().includes("pixeldrain"));
+      if (pixeldrain) {
+        return { quality: q.title, url: pixeldrain.url };
+      }
+      return null;
+    }).filter(Boolean) || [];
+
   return (
     <main className="min-h-screen bg-[#050505] text-white font-sans pb-24">
       <header className="sticky top-0 z-50 bg-[#050505]/90 backdrop-blur-md px-4 py-3 border-b border-white/5 flex items-center gap-3">
@@ -74,22 +110,34 @@ export default function AnimeWatchPage() {
         <h1 className="text-sm font-bold truncate flex-1">{episode.title}</h1>
       </header>
 
-      {/* AREA VIDEO PLAYER */}
-      <div className="w-full aspect-video bg-black relative border-b border-white/5">
+      {/* VIDEO PLAYER AREA */}
+      <div className="w-full aspect-video bg-black relative border-b border-white/5 overflow-hidden">
         {loadingVideo && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="w-6 h-6 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
           </div>
         )}
         
         {videoUrl ? (
-          <iframe
-            src={videoUrl}
-            allowFullScreen
-            className="absolute inset-0 w-full h-full relative z-10"
-            title="Video Player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          ></iframe>
+          isDirectVideo ? (
+            // NATIVE HTML5 PLAYER (Untuk kualitas HD)
+            <video
+              src={videoUrl}
+              controls
+              autoPlay
+              className="absolute inset-0 w-full h-full object-contain z-10 bg-black"
+              controlsList="nodownload"
+            />
+          ) : (
+            // IFRAME PLAYER (Untuk server default/360p)
+            <iframe
+              src={videoUrl}
+              allowFullScreen
+              className="absolute inset-0 w-full h-full relative z-10"
+              title="Video Player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            ></iframe>
+          )
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs">
             Link video tidak tersedia.
@@ -112,34 +160,60 @@ export default function AnimeWatchPage() {
           ) : <div className="flex-1"></div>}
         </div>
 
-        {/* PEMILIH SERVER */}
+        {/* STREAMING HD (DARI LINK DOWNLOAD) */}
+        {hdStreams.length > 0 && (
+          <div className="bg-gradient-to-br from-cyan-900/40 to-black border border-cyan-500/30 rounded-2xl p-4">
+            <h3 className="text-xs font-bold text-cyan-400 mb-3 flex items-center gap-2 uppercase tracking-wider">
+              <Zap size={14} className="fill-cyan-400" /> Streaming Kualitas HD (Direct)
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {hdStreams.map((stream: any, i: number) => (
+                <button
+                  key={i}
+                  onClick={() => playDirectVideo(stream.url, `hd-${i}`)}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-black border transition-all flex items-center gap-2 ${
+                    activeServer === `hd-${i}`
+                      ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(8,145,178,0.5)]" 
+                      : "bg-black/50 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                  }`}
+                >
+                  <Play size={12} /> Putar {stream.quality}
+                </button>
+              ))}
+            </div>
+            <p className="text-[9px] text-cyan-300/60 mt-3 italic">
+              *Kualitas HD diputar langsung menggunakan player internal (bebas lag).
+            </p>
+          </div>
+        )}
+
+        {/* PEMILIH SERVER IFRAME (360p) */}
         {episode.server?.qualities && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-            <h3 className="text-xs font-bold text-cyan-400 mb-3 flex items-center gap-2 uppercase tracking-wider">
-              <Server size={14} /> Pilih Server & Kualitas
+            <h3 className="text-xs font-bold text-slate-300 mb-3 flex items-center gap-2 uppercase tracking-wider">
+              <Server size={14} /> Server Alternatif
             </h3>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <p className="text-[9px] font-mono text-slate-500 mb-1.5 uppercase">Default</p>
                 <button
                   onClick={() => {
-                    setVideoUrl(`/api/anime/proxy?url=${encodeURIComponent(episode.defaultStreamingUrl)}`);
+                    setVideoUrl(episode.defaultStreamingUrl);
+                    setIsDirectVideo(false);
                     setActiveServer("default");
                   }}
                   className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-2 ${
                     activeServer === "default" 
-                      ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(8,145,178,0.4)]" 
-                      : "bg-black/40 text-slate-300 border-white/10 hover:bg-white/10"
+                      ? "bg-slate-700 text-white border-slate-500" 
+                      : "bg-black/40 text-slate-400 border-white/10 hover:bg-white/10"
                   }`}
                 >
-                  <Play size={12} /> Player Utama
+                  <Play size={12} /> Player Utama (Blogspot)
                 </button>
               </div>
 
               {episode.server.qualities.map((q: any, i: number) => {
                 if (!q.serverList || q.serverList.length === 0) return null;
-                
                 return (
                   <div key={i}>
                     <p className="text-[9px] font-mono text-slate-500 mb-1.5 uppercase">{q.title}</p>
@@ -147,11 +221,11 @@ export default function AnimeWatchPage() {
                       {q.serverList.map((server: any) => (
                         <button
                           key={server.serverId}
-                          onClick={() => changeServer(server.serverId, server.title)}
+                          onClick={() => changeIframeServer(server.serverId, server.title)}
                           className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
                             activeServer === server.serverId 
-                              ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(8,145,178,0.4)]" 
-                              : "bg-black/40 text-slate-300 border-white/10 hover:bg-white/10"
+                              ? "bg-slate-700 text-white border-slate-500" 
+                              : "bg-black/40 text-slate-400 border-white/10 hover:bg-white/10"
                           }`}
                         >
                           {server.title}
@@ -174,44 +248,6 @@ export default function AnimeWatchPage() {
             <p className="text-xs text-slate-300 leading-relaxed text-justify">
               {episode.synopsis.paragraphs[0]}
             </p>
-          </div>
-        </div>
-
-        {/* List Download */}
-        <div>
-          <h2 className="text-sm font-black text-white flex items-center gap-2 mb-4 uppercase tracking-widest">
-            <Download size={16} className="text-cyan-400" /> Link Download
-          </h2>
-          
-          <div className="space-y-4">
-            {episode.downloadUrl?.formats?.map((format: any, idx: number) => (
-              <div key={idx} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-                <div className="bg-white/10 px-4 py-2 border-b border-white/10">
-                  <h3 className="text-xs font-black text-white tracking-wider">{format.title}</h3>
-                </div>
-                
-                <div className="p-4 space-y-4">
-                  {format.qualities.map((quality: any, qIdx: number) => (
-                    <div key={qIdx}>
-                      <p className="text-[10px] font-mono text-cyan-500 mb-2 uppercase tracking-wider">{quality.title}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {quality.urls.map((urlObj: any, uIdx: number) => (
-                          <a 
-                            key={uIdx} 
-                            href={urlObj.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="px-3 py-1.5 bg-black/40 border border-white/10 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-all"
-                          >
-                            {urlObj.title}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>
