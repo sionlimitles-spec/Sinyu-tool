@@ -2,19 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --- BASE STYLES --- */
 body {
   background-color: #f8fafc; /* Latar putih kebiruan (Slate 50) */
-  color: #0f172a; /* Teks gelap */
+  color: #0f172a; /* Teks gelap (Slate 900) */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  overscroll-behavior: none;
+  overscroll-behavior: none; /* Mencegah efek bounce saat scroll di HP */
+  -webkit-tap-highlight-color: transparent; /* Menghilangkan highlight biru saat tombol ditekan di HP */
 }
 
+/* --- UTILITIES --- */
 @layer utilities {
+  /* Menyembunyikan scrollbar untuk menu horizontal */
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 
-  /* Efek Kaca Putih (Frosted White Glass) */
+  /* Efek Kaca Putih (Frosted White Glass) untuk Home */
   .glass-card {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px);
@@ -23,6 +31,7 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   }
 
+  /* Efek Kaca untuk Info Bar di Home */
   .glass-info-bar {
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(16px);
@@ -31,13 +40,34 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
   }
 
-  /* Animasi Masuk */
+  /* --- ANIMASI MASUK (FADE UP) --- */
   @keyframes slideUpFade {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { 
+      opacity: 0; 
+      transform: translateY(15px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
   }
+  
   .animate-enter {
     animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
+    opacity: 0; /* Memastikan elemen tidak terlihat sebelum animasi mulai */
+  }
+
+  /* --- ANIMASI MODAL COLOR PICKER (SLIDE UP) --- */
+  @keyframes slide-up {
+    from { 
+      transform: translateY(100%); 
+    }
+    to { 
+      transform: translateY(0); 
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
