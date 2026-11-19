@@ -21,7 +21,8 @@ export default function AnimeWatchPage() {
         const json = await res.json();
         if (json.success) {
           setEpisode(json.data);
-          setVideoUrl(json.data.defaultStreamingUrl);
+          // Secara default, kita coba tembus server default pakai proxy
+          setVideoUrl(`/api/anime/proxy?url=${encodeURIComponent(json.data.defaultStreamingUrl)}`);
           setActiveServer("default");
         }
       } catch (err) {
@@ -33,31 +34,24 @@ export default function AnimeWatchPage() {
     fetchEpisode();
   }, [id]);
 
-  // Fungsi ganti server
   const changeServer = async (serverId: string, serverName: string) => {
-    // Jangan ganti jika server sama
     if (activeServer === serverId) return;
-
-    // Cegah error jika user tidak sengaja klik server download
-    if (serverName.toLowerCase().includes("mega") || serverName.toLowerCase().includes("gofile")) {
-      alert("Server ini khusus untuk Download, tidak bisa diputar langsung di web.");
-      return;
-    }
-
     setLoadingVideo(true);
     setActiveServer(serverId);
     try {
       const res = await fetch(`/api/anime/server?id=${serverId}`);
       const json = await res.json();
+      
       if (json.success && json.url) {
-        setVideoUrl(json.url);
+        // PAKSA SEMUA SERVER MASUK KE DALAM PROXY IFRAME
+        setVideoUrl(`/api/anime/proxy?url=${encodeURIComponent(json.url)}`);
       } else {
-        alert("Gagal memuat server ini. Coba server lain.");
-        setVideoUrl(episode.defaultStreamingUrl); // Balikin ke default
+        alert("Gagal memuat server ini.");
         setActiveServer("default");
       }
     } catch (err) {
-      alert("Koneksi ke server gagal.");
+      alert("Koneksi gagal.");
+      setActiveServer("default");
     } finally {
       setLoadingVideo(false);
     }
@@ -66,7 +60,6 @@ export default function AnimeWatchPage() {
   if (loading) return (
     <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-cyan-500 gap-3">
       <div className="w-8 h-8 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-      <p className="text-xs font-bold tracking-widest uppercase">Memuat Data...</p>
     </div>
   );
   
@@ -74,7 +67,6 @@ export default function AnimeWatchPage() {
 
   return (
     <main className="min-h-screen bg-[#050505] text-white font-sans pb-24">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-[#050505]/90 backdrop-blur-md px-4 py-3 border-b border-white/5 flex items-center gap-3">
         <button onClick={() => router.back()} className="p-2 rounded-full bg-white/5 active:scale-90 transition-transform">
           <ArrowLeft size={18} />
@@ -82,7 +74,7 @@ export default function AnimeWatchPage() {
         <h1 className="text-sm font-bold truncate flex-1">{episode.title}</h1>
       </header>
 
-      {/* Video Player Area */}
+      {/* AREA VIDEO PLAYER */}
       <div className="w-full aspect-video bg-black relative border-b border-white/5">
         {loadingVideo && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -106,7 +98,6 @@ export default function AnimeWatchPage() {
       </div>
 
       <div className="px-5 pt-6 space-y-8">
-        {/* Navigasi Prev / Next */}
         <div className="flex justify-between gap-3">
           {episode.hasPrevEpisode ? (
             <Link href={`/tools/anime/watch/${episode.prevEpisode.episodeId}`} className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 py-3 rounded-xl text-xs font-bold transition-colors">
@@ -121,20 +112,19 @@ export default function AnimeWatchPage() {
           ) : <div className="flex-1"></div>}
         </div>
 
-        {/* PEMILIH SERVER STREAMING */}
+        {/* PEMILIH SERVER */}
         {episode.server?.qualities && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
             <h3 className="text-xs font-bold text-cyan-400 mb-3 flex items-center gap-2 uppercase tracking-wider">
-              <Server size={14} /> Pilih Server Streaming
+              <Server size={14} /> Pilih Server & Kualitas
             </h3>
             
             <div className="space-y-3">
-              {/* Default Server Button */}
               <div>
                 <p className="text-[9px] font-mono text-slate-500 mb-1.5 uppercase">Default</p>
                 <button
                   onClick={() => {
-                    setVideoUrl(episode.defaultStreamingUrl);
+                    setVideoUrl(`/api/anime/proxy?url=${encodeURIComponent(episode.defaultStreamingUrl)}`);
                     setActiveServer("default");
                   }}
                   className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-2 ${
@@ -147,27 +137,18 @@ export default function AnimeWatchPage() {
                 </button>
               </div>
 
-              {/* Map Server Lainnya */}
               {episode.server.qualities.map((q: any, i: number) => {
                 if (!q.serverList || q.serverList.length === 0) return null;
                 
-                // Filter server yang bukan untuk download (seperti Mega)
-                const streamServers = q.serverList.filter((s: any) => 
-                  !s.title.toLowerCase().includes("mega") && 
-                  !s.title.toLowerCase().includes("gofile")
-                );
-
-                if (streamServers.length === 0) return null;
-
                 return (
                   <div key={i}>
                     <p className="text-[9px] font-mono text-slate-500 mb-1.5 uppercase">{q.title}</p>
                     <div className="flex flex-wrap gap-2">
-                      {streamServers.map((server: any) => (
+                      {q.serverList.map((server: any) => (
                         <button
                           key={server.serverId}
                           onClick={() => changeServer(server.serverId, server.title)}
-                          className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-2 ${
+                          className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
                             activeServer === server.serverId 
                               ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(8,145,178,0.4)]" 
                               : "bg-black/40 text-slate-300 border-white/10 hover:bg-white/10"
