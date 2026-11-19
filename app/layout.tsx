@@ -1,6 +1,8 @@
+import './globals.css';
+
 export const metadata = {
   title: 'Sinyu Tool',
-  description: 'Kumpulan tools berguna dalam satu web',
+  description: 'Premium Utilities & Media',
 }
 
 export default function RootLayout({
