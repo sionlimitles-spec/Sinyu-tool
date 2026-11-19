@@ -3,25 +3,20 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Download, Server, Info, PlayCircle } from "lucide-react";
 
 export default function AnimeWatchPage() {
   const { id } = useParams();
   const router = useRouter();
   const [episode, setEpisode] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [videoUrl, setVideoUrl] = useState("");
-  const [activeServer, setActiveServer] = useState("");
 
   useEffect(() => {
     const fetchEpisode = async () => {
       try {
         const res = await fetch(`/api/anime/episode?id=${id}`);
         const json = await res.json();
-        if (json.success) {
-          setEpisode(json.data);
-          setVideoUrl(json.data.defaultStreamingUrl);
-        }
+        if (json.success) setEpisode(json.data);
       } catch (err) {
         console.error(err);
       } finally {
@@ -31,104 +26,108 @@ export default function AnimeWatchPage() {
     fetchEpisode();
   }, [id]);
 
-  // Fungsi untuk mengganti server/kualitas
-  const changeServer = async (serverId: string) => {
-    setActiveServer(serverId);
-    try {
-      const res = await fetch(`/api/anime/server?id=${serverId}`);
-      const json = await res.json();
-      if (json.success) {
-        setVideoUrl(json.url);
-      } else {
-        alert("Gagal memuat server ini. Coba kualitas lain.");
-      }
-    } catch (err) {
-      alert("Koneksi gagal.");
-    }
-  };
-
-  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-cyan-500">Memuat video...</div>;
-  if (!episode) return <div className="min-h-screen bg-black flex items-center justify-center text-red-500">Video tidak ditemukan.</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center text-cyan-500 gap-3">
+      <div className="w-8 h-8 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+      <p className="text-xs font-bold tracking-widest uppercase">Memuat Player...</p>
+    </div>
+  );
+  
+  if (!episode) return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-red-500 font-bold">Episode tidak ditemukan.</div>;
 
   return (
-    <main className="min-h-screen bg-black text-white font-sans pb-10">
-      <header className="absolute top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-between">
-        <button onClick={() => router.back()} className="p-2 rounded-full bg-black/50 border border-white/10 backdrop-blur-md active:scale-90 transition-transform">
+    <main className="min-h-screen bg-[#050505] text-white font-sans pb-24">
+      {/* Header Clean */}
+      <header className="sticky top-0 z-50 bg-[#050505]/90 backdrop-blur-md px-4 py-3 border-b border-white/5 flex items-center gap-3">
+        <button onClick={() => router.back()} className="p-2 rounded-full bg-white/5 active:scale-90 transition-transform">
           <ArrowLeft size={18} />
         </button>
-        <h1 className="text-sm font-bold truncate max-w-[200px]">{episode.title}</h1>
-        <div className="w-8"></div>
+        <h1 className="text-sm font-bold truncate flex-1">{episode.title}</h1>
       </header>
 
       {/* Video Player */}
-      <div className="w-full aspect-video bg-black relative mt-16">
-        {videoUrl ? (
+      <div className="w-full aspect-video bg-black relative border-b border-white/5">
+        {episode.defaultStreamingUrl ? (
           <iframe
-            src={videoUrl}
+            src={episode.defaultStreamingUrl}
             allowFullScreen
             className="absolute inset-0 w-full h-full"
             title="Video Player"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           ></iframe>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-slate-500">
+          <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs">
             Link video tidak tersedia.
           </div>
         )}
       </div>
 
-      <div className="px-6 py-6 space-y-6">
-        <div className="flex justify-between gap-4">
+      <div className="px-5 pt-6 space-y-8">
+        {/* Navigasi Prev / Next (Lebih Modern) */}
+        <div className="flex justify-between gap-3">
           {episode.hasPrevEpisode ? (
             <Link href={`/tools/anime/watch/${episode.prevEpisode.episodeId}`} className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 py-3 rounded-xl text-xs font-bold transition-colors">
-              <ChevronLeft size={16} /> Prev
+              <ChevronLeft size={16} /> Prev Episode
             </Link>
           ) : <div className="flex-1"></div>}
 
           {episode.hasNextEpisode ? (
-            <Link href={`/tools/anime/watch/${episode.nextEpisode.episodeId}`} className="flex-1 flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl text-xs font-black transition-colors shadow-[0_0_15px_rgba(8,145,178,0.4)]">
-              Next <ChevronRight size={16} />
+            <Link href={`/tools/anime/watch/${episode.nextEpisode.episodeId}`} className="flex-1 flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-black py-3 rounded-xl text-xs font-black transition-colors shadow-[0_0_20px_rgba(8,145,178,0.3)]">
+              Next Episode <ChevronRight size={16} />
             </Link>
           ) : <div className="flex-1"></div>}
         </div>
 
-        {/* PEMILIH KUALITAS & SERVER */}
+        {/* Info Box */}
         <div>
-          <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-            <Settings size={16} className="text-cyan-400" /> Pilih Kualitas & Server
-          </h3>
-          <div className="space-y-4">
-            {episode.server?.qualities?.map((q: any, i: number) => (
-              // Sembunyikan jika serverList kosong (seperti di "unknown")
-              q.serverList.length > 0 && (
-                <div key={i}>
-                  <p className="text-[10px] font-mono text-slate-500 mb-2 uppercase">{q.title}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {q.serverList.map((server: any) => (
-                      <button
-                        key={server.serverId}
-                        onClick={() => changeServer(server.serverId)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                          activeServer === server.serverId 
-                            ? "bg-cyan-500 text-black border-cyan-400" 
-                            : "bg-white/5 text-slate-300 border-white/10 hover:bg-white/10"
-                        }`}
-                      >
-                        {server.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )
-            ))}
+          <h2 className="text-sm font-black text-cyan-400 flex items-center gap-2 mb-2 uppercase tracking-widest">
+            <Info size={16} /> Sinopsis
+          </h2>
+          <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
+            <p className="text-xs text-slate-300 leading-relaxed text-justify">
+              {episode.synopsis.paragraphs[0]}
+            </p>
           </div>
         </div>
 
+        {/* List Download (Menggantikan tombol kualitas yang error) */}
         <div>
-          <h3 className="text-xs font-bold text-slate-400 mb-2">Sinopsis</h3>
-          <p className="text-[11px] text-slate-300 leading-relaxed text-justify line-clamp-4">
-            {episode.synopsis.paragraphs[0]}
-          </p>
+          <h2 className="text-sm font-black text-cyan-400 flex items-center gap-2 mb-4 uppercase tracking-widest">
+            <Download size={16} /> Link Download
+          </h2>
+          
+          <div className="space-y-4">
+            {episode.downloadUrl?.formats?.map((format: any, idx: number) => (
+              <div key={idx} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                {/* Header Format (MKV/MP4/x265) */}
+                <div className="bg-white/10 px-4 py-2 border-b border-white/10">
+                  <h3 className="text-xs font-black text-white tracking-wider">{format.title}</h3>
+                </div>
+                
+                {/* List Kualitas */}
+                <div className="p-4 space-y-4">
+                  {format.qualities.map((quality: any, qIdx: number) => (
+                    <div key={qIdx}>
+                      <p className="text-[10px] font-mono text-cyan-500 mb-2 uppercase tracking-wider">{quality.title}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {quality.urls.map((urlObj: any, uIdx: number) => (
+                          <a 
+                            key={uIdx} 
+                            href={urlObj.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 bg-black/40 border border-white/10 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-all"
+                          >
+                            {urlObj.title}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </main>
