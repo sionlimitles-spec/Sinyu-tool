@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Biarkan kosong seperti ini. 
-  // JANGAN tambahkan output: 'export' karena kita sekarang pakai OpenNext (Full-Stack).
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;
