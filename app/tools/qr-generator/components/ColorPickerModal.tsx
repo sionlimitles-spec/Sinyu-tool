@@ -1,6 +1,6 @@
 "use client";
 
-import { HexColorPicker } from "react-colorful";
+import { HexColorPicker, HexColorInput } from "react-colorful";
 import { X } from "lucide-react";
 
 interface Props {
@@ -11,19 +11,53 @@ interface Props {
 
 export default function ColorPickerModal({ color, onChange, onClose }: Props) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm p-4 pb-8 animate-enter">
-      <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-4 w-full max-w-sm shadow-2xl">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xs font-bold text-slate-200">Pilih Warna</h3>
-          <button onClick={onClose} className="p-1 rounded-full bg-white/5 active:scale-90 transition-transform">
-            <X size={16} />
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-enter">
+      {/* Container Modal */}
+      <div className="bg-white border-t border-slate-200 rounded-t-3xl p-6 w-full max-w-md shadow-2xl animate-slide-up">
+        
+        {/* Header Modal dengan Tombol X yang Jelas */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h3 className="text-lg font-black text-slate-800">Pilih Warna</h3>
+            <p className="text-[10px] text-slate-500">Sesuaikan gradasi QR Code Anda</p>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 active:scale-90 transition-all border border-slate-200"
+          >
+            <X size={20} className="text-slate-700" />
           </button>
         </div>
-        <HexColorPicker color={color} onChange={onChange} style={{ width: "100%", height: "200px" }} />
-        <div className="mt-4 flex items-center gap-2 bg-white/5 p-2 rounded-lg">
-          <div className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: color }}></div>
-          <span className="text-xs font-mono">{color}</span>
+        
+        {/* Color Wheel */}
+        <div className="flex justify-center mb-6 p-2 bg-slate-50 rounded-2xl border border-slate-100">
+          <HexColorPicker color={color} onChange={onChange} style={{ width: "100%", height: "250px" }} />
         </div>
+        
+        {/* Input Hex & Preview */}
+        <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-6">
+          <div className="w-12 h-12 rounded-lg border border-slate-300 shadow-inner" style={{ backgroundColor: color }}></div>
+          <div className="flex-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Kode Hex</label>
+            <div className="flex items-center bg-white border border-slate-300 rounded-lg px-3 py-2">
+              <span className="text-slate-400 font-mono text-sm mr-1">#</span>
+              <HexColorInput 
+                color={color} 
+                onChange={onChange} 
+                className="w-full font-mono text-sm font-bold text-slate-800 focus:outline-none" 
+                prefixed={false}
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Tombol Selesai */}
+        <button 
+          onClick={onClose} 
+          className="w-full bg-blue-600 text-white font-black py-3.5 rounded-xl active:scale-[0.98] transition-transform shadow-lg shadow-blue-500/30"
+        >
+          Terapkan Warna
+        </button>
       </div>
     </div>
   );
