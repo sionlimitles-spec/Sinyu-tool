@@ -3,8 +3,8 @@
 import React, { useRef, useState } from 'react';
 import { 
   User, LayoutGrid, Download, Wrench, PlayCircle, Mail, QrCode, 
-  Smartphone, Crown, ChevronRight, ShieldCheck, Globe,
-  Monitor, Chrome, Signal, Battery, Flame, Sparkles
+  Smartphone, ChevronRight, ShieldCheck, Globe,
+  Monitor, Chrome, Signal, Battery
 } from 'lucide-react';
 
 // Custom Logo Sinyu
@@ -34,6 +34,7 @@ export default function Home() {
     { name: 'Network', icon: Globe, category: 'SYSTEM' },
   ];
 
+  // Logika Efek Spotlight (Mengikuti Jari/Kursor)
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>, index: number) => {
     const card = cardRefs.current[index];
     if (!card) return;
@@ -45,17 +46,17 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen pb-24 relative overflow-hidden">
+    <main className="min-h-screen pb-24 relative overflow-hidden bg-[#050505]">
       
-      {/* 1. BACKGROUND FOTO KIMI */}
-      <div className="fixed inset-0 z-0">
+      {/* 1. BACKGROUND FOTO KIMI (Fixed) */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
           src="https://files.catbox.moe/pkwzi8.jpg" 
           alt="Kimi Background" 
-          className="w-full h-full object-cover opacity-40 scale-105"
+          className="w-full h-full object-cover opacity-50 scale-105"
         />
         {/* Overlay Gradient Gelap agar teks terbaca */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/80 via-[#050505]/60 to-[#050505]"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/70 via-[#050505]/60 to-[#050505]"></div>
       </div>
 
       {/* 2. HEADER */}
@@ -75,38 +76,34 @@ export default function Home() {
         </button>
       </header>
 
-      {/* 3. INFO BAR (Mirip Nexora) */}
+      {/* 3. INFO BAR (Nexora Style) */}
       <div className="px-6 relative z-10 mb-6 animate-enter" style={{ animationDelay: '0.1s' }}>
         <div className="glass-info-bar rounded-2xl p-3 grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
           
-          {/* System Identity */}
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-full bg-white/10"><Monitor size={12} className="text-cyan-400" /></div>
             <div>
-              <p className="text-[8px] text-slate-400 uppercase tracking-wider">System Identity</p>
+              <p className="text-[8px] text-slate-400 uppercase tracking-wider">System</p>
               <p className="font-semibold text-white">Aether Matrix</p>
             </div>
           </div>
 
-          {/* Negara */}
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-full bg-white/10"><Globe size={12} className="text-blue-400" /></div>
             <div>
               <p className="text-[8px] text-slate-400 uppercase tracking-wider">Negara</p>
-              <p className="font-semibold text-white flex items-center gap-1">🇮🇩 Indonesia</p>
+              <p className="font-semibold text-white flex items-center gap-1">ID</p>
             </div>
           </div>
 
-          {/* Device */}
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-full bg-white/10"><Smartphone size={12} className="text-violet-400" /></div>
             <div>
               <p className="text-[8px] text-slate-400 uppercase tracking-wider">Device</p>
-              <p className="font-semibold text-white">Android / Mobile</p>
+              <p className="font-semibold text-white">Android</p>
             </div>
           </div>
 
-          {/* Browser */}
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-full bg-white/10"><Chrome size={12} className="text-emerald-400" /></div>
             <div>
@@ -115,7 +112,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Status & Baterai (Baris Bawah) */}
           <div className="col-span-2 flex items-center justify-between mt-1 pt-2 border-t border-white/5">
             <div className="flex items-center gap-2">
               <Signal size={12} className="text-emerald-500" />
@@ -129,36 +125,30 @@ export default function Home() {
               <span className="text-[9px] text-slate-300 font-mono">36%</span>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* 4. POSTER VIDEO (Segi Panjang + Fallback Hitam) */}
+      {/* 4. POSTER VIDEO (Fixed version) */}
       <div className="px-6 relative z-10 mb-8 animate-enter" style={{ animationDelay: '0.2s' }}>
-        <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(34,211,238,0.1)]">
+        <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(34,211,238,0.15)] bg-black">
           
-          {/* Video Player */}
+          {/* Fallback Hitam di belakang video */}
+          <div className="absolute inset-0 flex items-center justify-center z-0 bg-black">
+            <span className="text-slate-600 text-[10px] tracking-widest uppercase">Loading Media...</span>
+          </div>
+
           <video 
             src="https://files.catbox.moe/1g8dli.mp4" 
             autoPlay 
             muted 
             loop 
             playsInline
-            className="video-poster"
-            // Fallback hitam jika video gagal dimuat
-            style={{ backgroundColor: '#000' }}
-          >
-            {/* Poster hitam fallback */}
-            <div className="w-full h-full bg-black flex items-center justify-center">
-              <span className="text-slate-600 text-xs">Video tidak tersedia</span>
-            </div>
-          </video>
+            className="absolute inset-0 w-full h-full object-cover z-10"
+          />
 
-          {/* Overlay Gradient di bawah agar teks terbaca */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-20"></div>
 
-          {/* Teks di atas Poster */}
-          <div className="absolute bottom-0 left-0 p-4 w-full flex justify-between items-end">
+          <div className="absolute bottom-0 left-0 p-4 w-full flex justify-between items-end z-30">
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
@@ -210,7 +200,6 @@ export default function Home() {
               className="group relative flex flex-col items-center aspect-[9/16] p-2.5 rounded-[24px] glass-card transition-all duration-500 ease-out hover:-translate-y-1.5 active:scale-95 overflow-hidden animate-enter"
               style={{ animationDelay: `${0.5 + index * 0.1}s` }}
             >
-              {/* Efek Spotlight */}
               <div 
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
                 style={{
@@ -249,4 +238,4 @@ export default function Home() {
 
     </main>
   );
-                           }
+}
