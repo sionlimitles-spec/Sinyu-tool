@@ -14,39 +14,16 @@ import {
   Zap, 
   ShieldCheck 
 } from 'lucide-react';
-import './globals.css';
 
 export default function Home() {
   const tools = [
-    { 
-      name: 'Temp Mail', 
-      desc: 'Generate disposable email', 
-      icon: Mail, 
-      color: 'text-indigo-400', 
-      category: 'MAIL', 
-      glow: 'bg-indigo-500/20' 
-    },
-    { 
-      name: 'QR Generator', 
-      desc: 'Convert link to QR', 
-      icon: QrCode, 
-      color: 'text-cyan-400', 
-      category: 'MAKER', 
-      glow: 'bg-cyan-500/20' 
-    },
-    { 
-      name: 'Anime Stream', 
-      desc: 'Watch anime sub indo', 
-      icon: PlayCircle, 
-      color: 'text-emerald-400', 
-      category: 'MEDIA', 
-      glow: 'bg-emerald-500/20' 
-    },
+    { name: 'Temp Mail', desc: 'Generate disposable email', icon: Mail, color: 'text-indigo-400', category: 'MAIL', glow: 'bg-indigo-500/20' },
+    { name: 'QR Generator', desc: 'Convert link to QR', icon: QrCode, color: 'text-cyan-400', category: 'MAKER', glow: 'bg-cyan-500/20' },
+    { name: 'Anime Stream', desc: 'Watch anime sub indo', icon: PlayCircle, color: 'text-emerald-400', category: 'MEDIA', glow: 'bg-emerald-500/20' },
   ];
 
   return (
     <main className="pb-24 min-h-screen">
-      {/* Header & Hero */}
       <header className="relative w-full h-56 flex items-end p-6 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 via-slate-900/10 to-transparent z-0"></div>
         <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-600/10 blur-[100px] rounded-full"></div>
@@ -58,7 +35,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Status Profil (Tanpa Emoji, Pakai SVG) */}
       <div className="px-4 -mt-10 relative z-20">
         <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -69,27 +45,18 @@ export default function Home() {
             </div>
             <div>
               <div className="flex items-center gap-4 text-slate-300 text-xs font-medium">
-                <span className="flex items-center gap-1.5">
-                  <Globe size={14} className="text-slate-400" /> Indonesia
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Smartphone size={14} className="text-slate-400" /> Android
-                </span>
+                <span className="flex items-center gap-1.5"><Globe size={14} className="text-slate-400" /> Indonesia</span>
+                <span className="flex items-center gap-1.5"><Smartphone size={14} className="text-slate-400" /> Android</span>
               </div>
               <div className="flex gap-4 mt-2 text-slate-400 text-[10px] items-center font-semibold tracking-wide">
-                <span className="text-emerald-400 flex items-center gap-1">
-                  <Zap size={12} /> Online
-                </span>
-                <span className="text-indigo-300 flex items-center gap-1">
-                  <ShieldCheck size={12} /> VVIP
-                </span>
+                <span className="text-emerald-400 flex items-center gap-1"><Zap size={12} /> Online</span>
+                <span className="text-indigo-300 flex items-center gap-1"><ShieldCheck size={12} /> VVIP</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Kategori Menu */}
       <div className="flex gap-3 overflow-x-auto px-4 py-8 hide-scrollbar">
         <button className="bg-white text-slate-900 px-5 py-2.5 rounded-xl text-sm font-bold shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center gap-2 whitespace-nowrap transition-all">
           <LayoutGrid size={16} /> All Tools
@@ -102,16 +69,12 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Grid Tools */}
       <div className="px-4">
         <h2 className="text-lg font-bold text-white mb-5 tracking-wide">Available Tools</h2>
         <div className="grid grid-cols-2 gap-4">
-          
           {tools.map((tool, index) => (
             <div key={index} className="glass-card group rounded-2xl p-5 flex flex-col items-center text-center cursor-pointer relative overflow-hidden">
-              {/* Efek Glow di dalam kartu */}
               <div className={`absolute top-0 w-full h-1/2 ${tool.glow} blur-2xl group-hover:opacity-100 opacity-50 transition-opacity`}></div>
-              
               <div className={`relative w-14 h-14 rounded-2xl bg-slate-800/80 border border-white/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                 <tool.icon className={`${tool.color}`} size={26} strokeWidth={2} />
               </div>
@@ -122,7 +85,6 @@ export default function Home() {
               </span>
             </div>
           ))}
-
         </div>
       </div>
     </main>
