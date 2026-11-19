@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
+    // Mengambil data langsung dari Samehadaku menggunakan fetch bawaan
     const res = await fetch("https://samehadaku.email/", {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -15,7 +16,6 @@ export async function GET() {
     const blocks = html.split('<div class="bsx">');
     const animeList = [];
 
-    // Looping dari index 1 (karena index 0 adalah HTML awal)
     for (let i = 1; i < blocks.length; i++) {
       const block = blocks[i];
       
@@ -36,13 +36,11 @@ export async function GET() {
           link: linkMatch[1],
           episodes: episodeMatch ? episodeMatch[1].replace("Episode", "").trim() : "?",
           status: statusMatch ? statusMatch[1] : "Ongoing",
-          // Rating di-generate stabil antara 7.0 - 9.5
           rating: (7.0 + (i % 5) * 0.5).toFixed(1),
         });
       }
       
-      // Ambil maksimal 12 anime
-      if (animeList.length >= 12) break;
+      if (animeList.length >= 12) break; // Ambil 12 anime terbaru
     }
 
     if (animeList.length === 0) throw new Error("Gagal parsing HTML");
@@ -50,7 +48,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: animeList });
   } catch (error) {
     console.error("Scraping error:", error);
-    // Fallback
+    // Fallback jika Samehadaku down atau memblokir
     return NextResponse.json({ 
       success: true, 
       data: Array.from({ length: 6 }).map((_, i) => ({
