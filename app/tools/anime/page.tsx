@@ -94,6 +94,7 @@ export default function AnimePage() {
                   <img
                     src={anime.image}
                     alt={anime.title}
+                    referrerPolicy="no-referrer" // Mencegah gambar diblokir (kotak hitam)
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
